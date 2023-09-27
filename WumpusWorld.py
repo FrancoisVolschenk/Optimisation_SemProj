@@ -168,7 +168,7 @@ class World:
 
     def crossover(self):
         self.calc_generational_fitness()
-        self.brains.sort(key = lambda p: p.score, reverse = True)
+        self.brains.sort(key = lambda p: p.score)
         num_survivors = random.randint(0, self.pop_size // 2) # select a random pool of the elites
         new_gen = []
         # print(f"Saving {num_survivors} individuals from the last generation")
