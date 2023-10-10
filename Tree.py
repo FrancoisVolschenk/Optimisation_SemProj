@@ -1,4 +1,5 @@
 import random
+import pickle
 
 # from WumpusWorld import player
 
@@ -6,33 +7,30 @@ SAFE       = 0
 DRAFT      = 3
 SMELL      = 4
 SHIMMER    = 6
+WALL       = 11
 
-ARITY = {SAFE : 2, SMELL: 2, DRAFT: 2, SHIMMER:2, "LEFT": 1, "RIGHT": 1, "FORWARD": 0}
+ARITY = {SAFE : 2, SMELL: 2, DRAFT: 2, SHIMMER:2, WALL: 2, "LEFT": 1, "RIGHT": 1, "REMEMBER": 2, "FORWARD": 0}
 
-FUNCTIONS = [SAFE, SMELL, DRAFT, SHIMMER]
-TERMINALS = ["LEFT", "RIGHT", "FORWARD"]
+FUNCTIONS = [SAFE, SMELL, DRAFT, SHIMMER, "LEFT", "RIGHT", "REMEMBER"] # Last one could be renamed to check memory
+TERMINALS = ["FORWARD"]
 
 class Tree:
     def __init__(self, head_space, is_offspring = False):
         self.head_length = head_space
-        if not is_offspring:
-            self.chromosome = self.init_chromosome()
-            self.actions  = [] 
-            self.express_tree()
-            self.current_node = self.actions
-        else:
-            self.chromosome = []
-            self.actions = []
-            self.current_node = None
+        max_arity = max(list(ARITY.values()))
+        self.tail_length = (self.head_length * (max_arity - 1)) + 1
+        self.head = None
+        self.tail = None
+        self.init_chromosome()
         self.score = 0
         self.energy = 100
-
-    def get_action(self):
-        return self.current_node[0]
+        self.memory = set()
 
     def advance(self, dir = None):
         if len(self.current_node) == 1:
-            self.current_node = self.actions
+            self.current_node = self.tree
+        elif len(self.current_node) == 2:
+            self.current_node = self.current_node[1]
         elif dir is not None:
             if dir == 0:
                 self.current_node = self.current_node[1]
@@ -41,17 +39,15 @@ class Tree:
                     self.current_node = self.current_node[2]
     
     def init_chromosome(self):
-        # TODO : Find maximum arity dynamically for proper formula
-        max_arity = max(list(ARITY.values()))
-        self.tail_length = (self.head_length * (max_arity - 1)) + 1
-        chromosome = []
+        self.head = []
+        self.tail = []
         for h in range(self.head_length):
-            chromosome.append(random.choice(TERMINALS + FUNCTIONS))
+            self.head.append(random.choice(TERMINALS + FUNCTIONS))
         
         for t in range(self.tail_length):
-            chromosome.append(random.choice(TERMINALS))
+            self.tail.append(random.choice(TERMINALS))
 
-        return chromosome
+        self.chromosome = self.head + self.tail
 
     def _deepcopy(self, source):
         lstRet = []
@@ -63,11 +59,11 @@ class Tree:
     def express_tree(self):
         actions = self._deepcopy(self.chromosome)
         actions.reverse()
-        self.actions = []
+        tree = []
         qSubroots = []
         if len(actions) != 0:
-            self.actions.append(actions.pop())
-        qSubroots.append(self.actions)
+            tree.append(actions.pop())
+        qSubroots.append(tree)
         while len(qSubroots) != 0 and len(actions) != 0:
             subroot = qSubroots[0]
             qSubroots.remove(qSubroots[0])
@@ -77,29 +73,59 @@ class Tree:
                 arity -= 1
                 if ARITY[subroot[-1][0]] != 0:
                     qSubroots.append(subroot[-1])
+
+        return tree
             
     def mutate(self, mutation_rate = 0.2):
-        head_space = self.chromosome[:self.head_length]
-        tail_space = self.chromosome[self.head_length:]
-
-        # if random.randint() < 0.5:
-        #     head_space[]
-        for h in range(len(head_space)):
+        for h in range(self.head_length):
             if random.random() <= mutation_rate:
-                head_space[h] = random.choice(FUNCTIONS + TERMINALS)
+                self.head[h] = random.choice(FUNCTIONS + TERMINALS)
 
-        for t in range(len(tail_space)):
+        if random.random() <= mutation_rate:
+            self.head_length += 1
+            self.head.append(random.choice(FUNCTIONS + TERMINALS))
+
+        for t in range(self.tail_length):
             if random.random() <= mutation_rate:
-                tail_space[t] = random.choice(TERMINALS)
+                self.tail[t] = random.choice(TERMINALS)
+        
+        max_arity = max(list(ARITY.values()))
+        self.tail_length = (self.head_length * (max_arity - 1)) + 1
+        while(len(self.tail) < self.tail_length):
+            self.tail.append(random.choice(TERMINALS))
 
-        self.chromosome = head_space + tail_space
-        self.express_tree()
-        self.current_node = self.actions
+        self.chromosome = self.head + self.tail
+
+    def save(self, file_name = "top_g.gep"):
+        with open(file_name, "wb") as fp:
+            pickle.dump(self, fp)
+
+    def commit_memory(self, danger):
+        self.memory.add(danger)
 
 
+def Eq(c1, c2):
+    if(len(c1) != len(c2)):
+        return False
+    
+    for i in range(len(c1)):
+        if(c1[i] != c2[i]):
+            print(f"{i = }:{c1[i] = } is not equal to {c2[i] = }")
+            return False
+        
+    return True
 
 if __name__ == "__main__":
     tree = Tree(6)
+    c1 = tree._deepcopy(tree.chromosome)
+    # print(c1)
     print(tree.chromosome)
-    tree.express_tree()
-    print(tree.actions)
+    print(tree.express_tree())
+    print("==============================================================================")
+    trying = 1
+    while(Eq(c1, tree.chromosome)):
+        tree.mutate()
+        print(f"{trying = }")
+        trying += 1
+    print(tree.chromosome)
+    print(tree.express_tree())
