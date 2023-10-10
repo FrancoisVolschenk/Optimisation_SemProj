@@ -223,6 +223,7 @@ class World:
                 while run:
                     play_x = self.player.x
                     play_y = self.player.y
+                    current_dist = distance((self.gold_x, self.gold_y), (play_x, play_y))
                     lstSenses = self.map_types[play_y][play_x]
                     if visualize:
                         self.clock.tick(20)
@@ -273,10 +274,13 @@ class World:
                     else:
                         self.player.move(action)
                         self.brains[p].energy -= 1
-                        if play_x == self.player.x and play_y == self.player.y:
-                            self.brains[p].score -= 10
-                        elif SEEN not in self.map_types[self.player.y][self.player.x]:
+                        if (current_dist > distance((self.gold_x, self.gold_y), (self.player.x, self.player.y))) and (SEEN not in self.map_types[self.player.y][self.player.x]):
+                            self.brains[p].score += 10
                             self.map_types[self.player.y][self.player.x].insert(0, SEEN)
+                        # if play_x == self.player.x and play_y == self.player.y:
+                        #     self.brains[p].score -= 10
+                        # elif SEEN not in self.map_types[self.player.y][self.player.x]:
+                        #     self.map_types[self.player.y][self.player.x].insert(0, SEEN)
                             # brain.score -= 1
                         else:
                             self.brains[p].score -= 0.5
