@@ -1,18 +1,7 @@
 import random
 import pickle
-
+from Constants import *
 # from WumpusWorld import player
-
-SAFE       = 0
-DRAFT      = 3
-SMELL      = 4
-SHIMMER    = 6
-WALL       = 11
-
-ARITY = {SAFE : 2, SMELL: 2, DRAFT: 2, SHIMMER:2, WALL: 2, "LEFT": 1, "RIGHT": 1, "REMEMBER": 2, "FORWARD": 0}
-
-FUNCTIONS = [SAFE, SMELL, DRAFT, SHIMMER, "LEFT", "RIGHT", "REMEMBER"] # Last one could be renamed to check memory
-TERMINALS = ["FORWARD"]
 
 class Tree:
     def __init__(self, head_space, is_offspring = False):
@@ -81,18 +70,18 @@ class Tree:
             if random.random() <= mutation_rate:
                 self.head[h] = random.choice(FUNCTIONS + TERMINALS)
 
-        if random.random() <= mutation_rate:
-            self.head_length += 1
-            self.head.append(random.choice(FUNCTIONS + TERMINALS))
+        # if random.random() <= mutation_rate:
+        #     self.head_length += 1
+        #     self.head.append(random.choice(FUNCTIONS + TERMINALS))
 
         for t in range(self.tail_length):
             if random.random() <= mutation_rate:
                 self.tail[t] = random.choice(TERMINALS)
         
-        max_arity = max(list(ARITY.values()))
-        self.tail_length = (self.head_length * (max_arity - 1)) + 1
-        while(len(self.tail) < self.tail_length):
-            self.tail.append(random.choice(TERMINALS))
+        # max_arity = max(list(ARITY.values()))
+        # self.tail_length = (self.head_length * (max_arity - 1)) + 1
+        # while(len(self.tail) < self.tail_length):
+        #     self.tail.append(random.choice(TERMINALS))
 
         self.chromosome = self.head + self.tail
 
